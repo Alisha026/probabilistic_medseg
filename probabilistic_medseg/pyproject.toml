@@ -1,0 +1,32 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "probabilistic_medical_seg"
+version = "0.0.1"
+description = "In this project, we plan to implement and evaluate probabilistic deep learning approaches for medical image segmentation, focusing on uncertainty estimation and model calibration."
+authors = [
+  { name = "Alisha" },
+]
+license = { file = "LICENSE" }
+readme = "README.md"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License"
+]
+requires-python = "~=3.10.0"
+
+
+[tool.ruff]
+line-length = 99
+src = ["probabilistic_medical_seg"]
+include = ["pyproject.toml", "probabilistic_medical_seg/**/*.py"]
+
+[tool.ruff.lint]
+extend-select = ["I"]  # Add import sorting
+
+[tool.ruff.lint.isort]
+known-first-party = ["probabilistic_medical_seg"]
+force-sort-within-sections = true
+
