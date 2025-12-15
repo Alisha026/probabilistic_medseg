@@ -7,3 +7,13 @@ ruff
 tqdm
 typer
 -e .
+pillow
+numpy
+torch
+matplotlib
+torch
+torchvision
+albumentations
+tensorboard
+uvicorn
+fastapi
