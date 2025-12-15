@@ -189,3 +189,13 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Model checkpoints
+*.pth
+*.pt
+
+# Experiment outputs
+training_log_*.out
+evaluation_results/
+
+run*.sh
