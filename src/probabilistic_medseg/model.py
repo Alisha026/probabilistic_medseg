@@ -169,7 +169,7 @@ class ProbabilisticUNet(nn.Module):
         
         
         
-# Deterministic U-Net with mc dropout for uncertainty estimation
+# Deterministic U-Net with mc dropout for uncertainty estimation (Epistemic Uncertainty)
 def downConv_block_withDropout(in_channels, out_channels, dropout_prob=0.3):
     return nn.Sequential(
         nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
@@ -197,7 +197,7 @@ class DeterministicUNET(nn.Module):
         
         
         self.upconv4 = upConv_block(features * 16, features * 8)
-        self.decoder4 = downConv_block(features * 16, features * 8)
+        self.decoder4 = downConv_block_withDropout(features * 16, features * 8, dropout_prob=0.1)
         self.upconv3 = upConv_block(features * 8, features * 4)
         self.decoder3 = downConv_block(features * 8, features * 4)
         self.upconv2 = upConv_block(features * 4, features * 2)
