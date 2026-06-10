@@ -9,12 +9,12 @@ from torch.utils.tensorboard import SummaryWriter
 
 print(torch.cuda.get_device_name(0))
 
-# --- Training Function ---
+# Training Function 
 def train_one_epoch(model, loader, optimizer, loss_fn, device):
     model.train()
     total_loss = 0.0
-    # total_recon_loss = 0.0
-    # total_kl_loss = 0.0
+    total_recon_loss = 0.0
+    total_kl_loss = 0.0
 
     for images, mask_sets in loader:
         images = images.to(device)
@@ -23,25 +23,25 @@ def train_one_epoch(model, loader, optimizer, loss_fn, device):
         # Forward pass
         model_outputs = model(images, mask_sets)
         
-        # --- Calculate loss ---
-        loss, recon_loss, kl_loss = loss_fn(model_outputs, mask_sets)
+        # Calculate loss
+        loss, recon_loss, kl_loss = loss_fn(model_outputs)
         
-        # --- Backward pass ---
+        # Backward pass
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
         total_loss += loss.item()
-        # total_recon_loss += recon_loss.item()
-        # total_kl_loss += kl_loss.item()
+        total_recon_loss += recon_loss.item()
+        total_kl_loss += kl_loss.item()
 
     avg_loss = total_loss / len(loader)
-    # avg_recon_loss = total_recon_loss / len(loader)
-    # avg_kl_loss = total_kl_loss / len(loader)
+    avg_recon_loss = total_recon_loss / len(loader)
+    avg_kl_loss = total_kl_loss / len(loader)
     
     return avg_loss, avg_recon_loss, avg_kl_loss
 
-# --- Validation Function --- 
+# Validation Function
 def validate(model, loader, device):
     model.eval()
     all_dice_scores = []
@@ -62,20 +62,20 @@ def validate(model, loader, device):
     avg_dice = sum(all_dice_scores) / len(all_dice_scores)
     return avg_dice
 
-# --- Main Execution ---
+# Main
 if __name__ == "__main__":
     
-    # --- Configuration ---
+    # Configuration and Hyperparameters
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
     LEARNING_RATE = 1e-4
-    EPOCHS = 250
+    EPOCHS = 300
     BATCH_SIZE = 8 
-    NUM_WORKERS = 4 # Start with 0 for debugging, set to 4 for speed
+    NUM_WORKERS = 4 
     LATENT_DIM = 6
     BETA = 1.0 # The KL loss weighting
-    INIT_FEATURES = 32 # Must match your model
-    
-    # --- Your Data Paths ---
+    INIT_FEATURES = 32 
+
+    # Data Paths
     TRAIN_IMAGES_DIR = "data/raw/ISIC2018_Task1/train/images/ISIC2018_Task1-2_Training_Input"
     TRAIN_MASKS_DIR = "data/raw/ISIC2018_Task1/train/masks/ISIC2018_Task1_Training_GroundTruth"
     VAL_IMAGES_DIR = "data/raw/ISIC2018_Task1/val/images/ISIC2018_Task1-2_Validation_Input"
@@ -83,10 +83,10 @@ if __name__ == "__main__":
     
     log_dir = f'runs/prob_unet_lr{LEARNING_RATE}_bs{BATCH_SIZE}_beta{BETA}'
     writer = SummaryWriter(log_dir)
-    print(f"--- Starting Training on {DEVICE} ---")
-    print(f"--- TensorBoard logs will be saved to {log_dir} ---")
+    print(f"Starting Training on {DEVICE} ---")
+    print(f"TensorBoard logs will be saved to {log_dir} ---")
 
-    # --- 1. Get DataLoaders ---
+    # DataLoaders
     train_loader, val_loader = dataloader(
         train_data_dir=TRAIN_IMAGES_DIR,
         train_mask_dir=TRAIN_MASKS_DIR,
@@ -97,7 +97,7 @@ if __name__ == "__main__":
     )
     print(f"DataLoaders created. Training batches: {len(train_loader)}, Val batches: {len(val_loader)}")
 
-    # --- 2. Get Model ---
+    # Model
     model = ProbabilisticUNet(
         in_channels=3, 
         out_channels=1, 
@@ -105,23 +105,23 @@ if __name__ == "__main__":
         latent_dim=LATENT_DIM
     ).to(DEVICE)
 
-    # --- 3. Get Optimizer and Loss ---
+    # Optimizer and Loss
     optimizer = Adam(model.parameters(), lr=LEARNING_RATE)
     loss_fn = ELBOLoss(beta=BETA)
 
-    # --- 4. Training Loop ---
+    # Training Loop
     best_val_dice = 0.0
     
     for epoch in range(EPOCHS):
-        print(f"\n--- Epoch {epoch+1}/{EPOCHS} ---")
+        print(f"\nEpoch {epoch+1}/{EPOCHS} ---")
         
         train_loss, recon_loss, kl_loss = train_one_epoch(model, train_loader, optimizer, loss_fn, DEVICE)
-        print(f"  Train: ELBO={train_loss:.4f} | Recon Loss={recon_loss:.4f} | KL Loss={kl_loss:.4f}")
+        print(f"Train: ELBO={train_loss:.4f} | Recon Loss={recon_loss:.4f} | KL Loss={kl_loss:.4f}")
         
         val_dice = validate(model, val_loader, DEVICE)
-        print(f"  Val:   Dice Score = {val_dice:.4f}")
+        print(f"Val: Dice Score = {val_dice:.4f}")
         
-        # --- ADDED: Log scalars to TensorBoard ---
+        # Log scalars to TensorBoard
         writer.add_scalar('Loss/Train ELBO', train_loss, epoch)
         writer.add_scalar('Loss/Train Reconstruction', recon_loss, epoch)
         writer.add_scalar('Loss/Train KL', kl_loss, epoch)
@@ -134,7 +134,7 @@ if __name__ == "__main__":
             torch.save(model.state_dict(), "best_prob_unet_model.pth")
             print(f"  -> Saved new best model with Dice: {best_val_dice:.4f}")
             
-    print("\n--- Training Complete ---")
+    print("\nTraining Complete")
     print(f"Best validation Dice score: {best_val_dice:.4f}")
     
     

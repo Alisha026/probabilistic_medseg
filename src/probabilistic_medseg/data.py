@@ -8,7 +8,7 @@ from albumentations.pytorch import ToTensorV2
 import os
 from PIL import Image
 
-def data_augmentations(img_size=256):
+def data_augmentations():
     return augument.Compose([
         augument.HorizontalFlip(),
         augument.VerticalFlip(),
@@ -19,7 +19,7 @@ def data_augmentations(img_size=256):
         ToTensorV2(),
     ])
 
-def validation_augmentations(img_size=256):
+def validation_augmentations():
     return augument.Compose([
         augument.Normalize(),
         ToTensorV2(),
@@ -49,7 +49,7 @@ class ISICDataset(Dataset):
     
     def masks_samples(self, mask):
         # Generate random samples from the mask
-        mask_bin =(mask>0.5).astype(np.float32)
+        mask_bin =(mask>0.5).astype(np.uint8)
         samples = [mask_bin]
         
         kernel_3= np.ones((3,3),np.uint8)
@@ -84,7 +84,7 @@ class ISICDataset(Dataset):
 
         image = Image.open(img_path).convert("RGB").resize((256, 256))
         image = np.array(image)
-        mask = Image.open(mask_path).convert("L").resize((256, 256))
+        mask = Image.open(mask_path).convert("L").resize((256, 256), Image.Resampling.NEAREST)
         mask = np.array(mask)
 
         # Generate multiple plausible mask samples
@@ -94,6 +94,11 @@ class ISICDataset(Dataset):
             augmented = self.transform(image=image, masks=mask_samples)
             image = augmented['image']
             masks_list = augmented['masks']
+        else:
+            image = torch.from_numpy(image).permute(2, 0, 1).float() / 255.0
+            masks_list = [torch.from_numpy(m) for m in mask_samples]
+        
+              
         mask_tensor = torch.stack(masks_list).unsqueeze(1)  # Shape: (num_samples, 1, H, W) and then add channel dim
 
         return image, mask_tensor
@@ -108,8 +113,8 @@ def dataloader(train_data_dir, train_mask_dir, val_data_dir, val_mask_dir, batch
     training_dataset = ISICDataset(data_dir=train_data_dir, mask_dir=train_mask_dir, transform=transform, num_samples=num_samples)
     val_dataset = ISICDataset(data_dir=val_data_dir, mask_dir=val_mask_dir, transform=val_transform, num_samples=num_samples)
 
-    train_loader = DataLoader(training_dataset, batch_size=4, shuffle=True, num_workers=num_workers)
-    val_loader = DataLoader(val_dataset, batch_size=2, shuffle=False, num_workers=num_workers)
+    train_loader = DataLoader(training_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
 
     return train_loader, val_loader
     
