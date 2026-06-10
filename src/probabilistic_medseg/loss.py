@@ -17,33 +17,7 @@ class DiceLoss(nn.Module):
         dice = (2. * intersection + self.smooth) / (probs.sum() + targets.sum() + self.smooth)
         return 1 - dice
 
-class ELBOLoss(nn.Module):
-    def __init__(self, beta=1.0):
-        super(ELBOLoss, self).__init__()
-        self.beta = beta
-        self.bce_loss = nn.BCEWithLogitsLoss(reduction='mean')
-        self.dice_loss = DiceLoss()
-
-    def forward(self, model_outputs, ground_truth_masks):
-        logits, (mu_prior, log_var_prior), (mu_post, log_var_post) = model_outputs
-        
-        # 1. Reconstruction Loss
-        gt_mask = ground_truth_masks[:, 0, :, :, :]
-        loss_bce = self.bce_loss(logits, gt_mask)
-        loss_dice = self.dice_loss(logits, gt_mask)
-        reconstruction_loss = loss_bce + loss_dice
-
-        # 2. KL Divergence
-        prior_dist = Normal(mu_prior, torch.exp(0.5 * log_var_prior))
-        posterior_dist = Normal(mu_post, torch.exp(0.5 * log_var_post))
-        kl_div = kl_divergence(posterior_dist, prior_dist).sum(dim=1)
-        kl_loss = kl_div.mean()
-        
-        # 3. Final ELBO Loss
-        elbo_loss = reconstruction_loss + (self.beta * kl_loss)
-        
-        return elbo_loss, reconstruction_loss, kl_loss
-    
+# Simple combined loss for deterministic segmentation models
 class CombinedBCEDiceLoss(nn.Module):
     """
     A simple combined loss for a standard segmentation model.
@@ -57,6 +31,31 @@ class CombinedBCEDiceLoss(nn.Module):
     def forward(self, logits, targets):
         loss_bce = self.bce_loss(logits, targets)
         loss_dice = self.dice_loss(logits, targets)
-        
-        # You can weight these, but 1:1 is a good start
         return loss_bce + loss_dice
+    
+# Loss for the probabilistic segmentation model using ELBO
+class ELBOLoss(nn.Module):
+    def __init__(self, beta=1.0):
+        super(ELBOLoss, self).__init__()
+        self.beta = beta
+        self.bce_loss = nn.BCEWithLogitsLoss(reduction='mean')
+        self.dice_loss = DiceLoss()
+
+    def forward(self, model_outputs):
+        logits, (mu_prior, log_var_prior), (mu_post, log_var_post), gt_mask = model_outputs
+        
+        # Reconstruction Loss
+        loss_bce = self.bce_loss(logits, gt_mask)
+        loss_dice = self.dice_loss(logits, gt_mask)
+        reconstruction_loss = loss_bce + loss_dice
+
+        # KL Divergence
+        prior_dist = Normal(mu_prior, torch.exp(0.5 * log_var_prior))
+        posterior_dist = Normal(mu_post, torch.exp(0.5 * log_var_post))
+        kl_div = kl_divergence(posterior_dist, prior_dist).sum(dim=1)
+        kl_loss = kl_div.mean()
+        
+        # 3. Final ELBO Loss
+        elbo_loss = reconstruction_loss + (self.beta * kl_loss)
+        
+        return elbo_loss, reconstruction_loss, kl_loss

@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 
-
 def downConv_block(in_channels, out_channels):
     return nn.Sequential(
         nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
@@ -18,8 +17,6 @@ def upConv_block(in_channels, out_channels):
         nn.BatchNorm2d(out_channels),
         nn.ReLU(inplace=True),
     )
-
-
 
 class UNETEncoder(nn.Module):   
     def __init__(self, in_channels=3, init_features=32):
@@ -58,8 +55,6 @@ class UNETDecoder(nn.Module):
         self.decoder2 = downConv_block(features * 4, features * 2)
         self.upconv1 = upConv_block(features * 2, features)
         self.decoder1 = downConv_block(features * 2, features)
-
-        self.conv = nn.Conv2d(features, out_channels, kernel_size=1)
 
     def forward(self, bottleneck, enc_features):
         enc1, enc2, enc3, enc4 = enc_features
@@ -139,7 +134,7 @@ class ProbabilisticUNet(nn.Module):
         eps = torch.randn_like(std)
         return mu + eps * std
 
-    def forward(self, x_input, mask_set=None):
+    def forward(self, x_input, mask_set = None):
         # Encode input image
         bottleneck, enc_features = self.unet_encoder(x_input)
 
@@ -148,10 +143,14 @@ class ProbabilisticUNet(nn.Module):
         # Compute prior
         prior_mu, prior_log_var = self.prior_net(x_input)
         
-        if self.training:
+        if self.training and mask_set is not None:
+            # Randomly select one mask from the set of masks for this forward pass
+            num_samples = mask_set.shape[1]
+            random_idx = torch.randint(0, num_samples, (1,)).item()
+
             # Compute posterior during training
-            mask = mask_set[:,0,:,:,:] # Assuming mask_set shape is (B, num_samples, 1, H, W)
-            y_input_combined = torch.cat((x_input, mask), dim=1)
+            selected_mask = mask_set[:, random_idx, :, :, :] 
+            y_input_combined = torch.cat((x_input, selected_mask), dim=1)
             posterior_mu, posterior_log_var = self.posterior_net(y_input_combined)
 
             # Sample z from posterior
@@ -159,7 +158,7 @@ class ProbabilisticUNet(nn.Module):
             
             final_logits = self.feature_combiner(unet_logits, z)
             
-            return final_logits, (prior_mu, prior_log_var), (posterior_mu, posterior_log_var)
+            return final_logits, (prior_mu, prior_log_var), (posterior_mu, posterior_log_var), selected_mask
         else:
             # Sample z from prior during inference
             z = self.reparameterize(prior_mu, prior_log_var)
@@ -169,7 +168,7 @@ class ProbabilisticUNet(nn.Module):
         
         
         
-# Deterministic U-Net with mc dropout for uncertainty estimation
+# Deterministic U-Net with mc dropout for uncertainty estimation (Epistemic Uncertainty)
 def downConv_block_withDropout(in_channels, out_channels, dropout_prob=0.3):
     return nn.Sequential(
         nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
@@ -197,7 +196,7 @@ class DeterministicUNET(nn.Module):
         
         
         self.upconv4 = upConv_block(features * 16, features * 8)
-        self.decoder4 = downConv_block(features * 16, features * 8)
+        self.decoder4 = downConv_block_withDropout(features * 16, features * 8, dropout_prob=0.1)
         self.upconv3 = upConv_block(features * 8, features * 4)
         self.decoder3 = downConv_block(features * 8, features * 4)
         self.upconv2 = upConv_block(features * 4, features * 2)
