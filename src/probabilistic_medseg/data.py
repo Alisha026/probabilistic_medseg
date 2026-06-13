@@ -52,18 +52,18 @@ class ISICDataset(Dataset):
         mask_bin =(mask>0.5).astype(np.uint8)
         samples = [mask_bin]
         
-        kernel_3= np.ones((3,3),np.uint8)
         kernel_5= np.ones((5,5),np.uint8)
+        kernel_9= np.ones((9,9),np.uint8)
         
        # Add erosion/dilation samples
         if self.num_samples > 1:
-            samples.append(cv2.erode(mask_bin, kernel_3, iterations=1))
-        if self.num_samples > 2:
-            samples.append(cv2.dilate(mask_bin, kernel_3, iterations=1))
-        if self.num_samples > 3:
             samples.append(cv2.erode(mask_bin, kernel_5, iterations=1))
-        if self.num_samples > 4:
+        if self.num_samples > 2:
             samples.append(cv2.dilate(mask_bin, kernel_5, iterations=1))
+        if self.num_samples > 3:
+            samples.append(cv2.erode(mask_bin, kernel_9, iterations=1))
+        if self.num_samples > 4:
+            samples.append(cv2.dilate(mask_bin, kernel_9, iterations=1))
             
         # Ensure we have exactly num_samples
         while len(samples) < self.num_samples:
