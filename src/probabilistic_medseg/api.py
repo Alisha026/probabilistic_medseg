@@ -11,7 +11,7 @@ from model import ProbabilisticUNet
 import matplotlib.cm as cm
 
 # --- Configuration ---
-MODEL_PATH = "best_prob_unet_model.pth"
+MODEL_PATH = "best_prob_unet_model_final.pth"
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 IMG_SIZE = 256
 INIT_FEATURES = 32
