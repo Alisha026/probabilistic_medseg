@@ -70,9 +70,10 @@ if __name__ == "__main__":
     LEARNING_RATE = 1e-4
     EPOCHS = 300
     BATCH_SIZE = 8 
+    WARMUP_EPOCHS = 50 # We will linearly increase beta from 0 to MAX_BETA during these warmup epochs, then keep it constant for the rest of training
     NUM_WORKERS = 4 
     LATENT_DIM = 6
-    BETA = 1.0 # The KL loss weighting
+    MAX_BETA = 0.01 # we will do the kL Anneleaning manually by adjusting this value during training
     INIT_FEATURES = 32 
 
     # Data Paths
@@ -81,7 +82,7 @@ if __name__ == "__main__":
     VAL_IMAGES_DIR = "data/raw/ISIC2018_Task1/val/images/ISIC2018_Task1-2_Validation_Input"
     VAL_MASKS_DIR = "data/raw/ISIC2018_Task1/val/masks/ISIC2018_Task1_Validation_GroundTruth"
     
-    log_dir = f'runs/prob_unet_lr{LEARNING_RATE}_bs{BATCH_SIZE}_beta{BETA}'
+    log_dir = f'runs/prob_unet_lr{LEARNING_RATE}_bs{BATCH_SIZE}_beta{MAX_BETA}'
     writer = SummaryWriter(log_dir)
     print(f"Starting Training on {DEVICE} ---")
     print(f"TensorBoard logs will be saved to {log_dir} ---")
@@ -107,7 +108,7 @@ if __name__ == "__main__":
 
     # Optimizer and Loss
     optimizer = Adam(model.parameters(), lr=LEARNING_RATE)
-    loss_fn = ELBOLoss(beta=BETA)
+    loss_fn = ELBOLoss(beta=MAX_BETA)
 
     # Training Loop
     best_val_dice = 0.0
@@ -115,6 +116,9 @@ if __name__ == "__main__":
     for epoch in range(EPOCHS):
         print(f"\nEpoch {epoch+1}/{EPOCHS} ---")
         
+        current_beta = MAX_BETA * min(1.0, epoch / WARMUP_EPOCHS) # Linear warmup of beta
+        loss_fn.beta = current_beta # Update the beta value in the loss function
+
         train_loss, recon_loss, kl_loss = train_one_epoch(model, train_loader, optimizer, loss_fn, DEVICE)
         print(f"Train: ELBO={train_loss:.4f} | Recon Loss={recon_loss:.4f} | KL Loss={kl_loss:.4f}")
         
@@ -126,12 +130,12 @@ if __name__ == "__main__":
         writer.add_scalar('Loss/Train Reconstruction', recon_loss, epoch)
         writer.add_scalar('Loss/Train KL', kl_loss, epoch)
         writer.add_scalar('Metric/Validation Dice', val_dice, epoch)
-        
+        writer.add_scalar('Hyperparameters/Beta', current_beta, epoch)
         
         # Save the best model
         if val_dice > best_val_dice:
             best_val_dice = val_dice
-            torch.save(model.state_dict(), "best_prob_unet_model.pth")
+            torch.save(model.state_dict(), "best_prob_unet_model_final.pth")
             print(f"  -> Saved new best model with Dice: {best_val_dice:.4f}")
             
     print("\nTraining Complete")
