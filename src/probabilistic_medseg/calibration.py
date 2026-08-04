@@ -110,7 +110,7 @@ if __name__ == "__main__":
     # Calculate Metrics using YOUR metrices.py
     ece_calculator = ECE(n_bins=10)
     
-    print("\n=== CALIBRATION RESULTS ===")
+    print("\nCALIBRATION RESULTS")
     
     prob_brier = compute_brier_score(prob_tensor, target_tensor)
     prob_ece = ece_calculator(prob_tensor, target_tensor)
