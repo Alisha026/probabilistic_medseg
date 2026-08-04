@@ -117,7 +117,7 @@ if __name__ == "__main__":
         num_workers=NUM_WORKERS
     )
     
-    # 3. Load Models
+    # Load Models
     prob_model = ProbabilisticUNet(in_channels=3, out_channels=1, init_features=32, latent_dim=6).to(DEVICE)
     mc_dropout_model = DeterministicUNET(in_channels=3, out_channels=1, init_features=32).to(DEVICE)
 

@@ -1,23 +1,21 @@
 import torch
 import numpy as np
 import os
-
 from torch.utils.data import DataLoader
 from data import dataloader
-# Import BOTH models
 from model import ProbabilisticUNet, DeterministicUNET, downConv_block_withDropout
 from metrices import compute_dice, compute_iou, compute_brier_score, ECE
 
-# --- Configuration ---
+# Configuration
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-PROB_MODEL_PATH = "best_prob_unet_model.pth"
+PROB_MODEL_PATH = "best_prob_unet_model_final.pth"
 MC_MODEL_PATH = "best_mc_dropout_model.pth"
 INIT_FEATURES = 32
 LATENT_DIM = 6
 NUM_SAMPLES = 10  # N=10 samples for uncertainty
 BATCH_SIZE = 1    # Process one image at a time for metrics
 
-# --- Data Paths (Using Validation Set as Test) ---
+# Data Paths
 TEST_IMAGES_DIR = "data/raw/ISIC2018_Task1/val/images/ISIC2018_Task1-2_Validation_Input"
 TEST_MASKS_DIR = "data/raw/ISIC2018_Task1/val/masks/ISIC2018_Task1_Validation_GroundTruth"
 
@@ -40,7 +38,7 @@ def get_model_predictions(model, image, model_type="probabilistic"):
         # Stack: [N, B, 1, H, W]
         samples_tensor = torch.stack(samples)
         
-        # 1. Mean Prediction
+        # Mean Prediction
         # Shape becomes [B, 1, H, W] - preserving channel dim to match mask
         mean_probs = samples_tensor.mean(dim=0)
         
@@ -48,45 +46,45 @@ def get_model_predictions(model, image, model_type="probabilistic"):
 
 if __name__ == "__main__":
     
-    # 1. Setup Data
+    # Data
     _, test_loader = dataloader(
         train_data_dir=TEST_IMAGES_DIR, 
         train_mask_dir=TEST_MASKS_DIR,  
-        val_data_dir=TEST_IMAGES_DIR,   # Use Val set as Test
+        val_data_dir=TEST_IMAGES_DIR,   # Using Val set as Test
         val_mask_dir=TEST_MASKS_DIR,    
         batch_size=BATCH_SIZE,
         num_workers=0
     )
     print(f"Comparison DataLoader created with {len(test_loader)} images.")
     
-    # 2. Load Models
-    print("Loading Models...")
+    # Models
+    print("Loading Models")
     
     # Probabilistic U-Net
     prob_model = ProbabilisticUNet(3, 1, LATENT_DIM, INIT_FEATURES).to(DEVICE)
     try:
         prob_model.load_state_dict(torch.load(PROB_MODEL_PATH, map_location=DEVICE))
-        print("✅ Probabilistic U-Net loaded.")
+        print("Probabilistic U-Net loaded.")
         prob_loaded = True
     except FileNotFoundError:
-        print(f"❌ {PROB_MODEL_PATH} not found.")
+        print(f"{PROB_MODEL_PATH} not found.")
         prob_loaded = False
 
     # MC Dropout U-Net
     mc_model = DeterministicUNET(3, 1, INIT_FEATURES).to(DEVICE)
     try:
         mc_model.load_state_dict(torch.load(MC_MODEL_PATH, map_location=DEVICE))
-        print("✅ MC Dropout U-Net loaded.")
+        print("MC Dropout U-Net loaded.")
         mc_loaded = True
     except FileNotFoundError:
-        print(f"❌ {MC_MODEL_PATH} not found.")
+        print(f"{MC_MODEL_PATH} not found.")
         mc_loaded = False
 
     if not (prob_loaded and mc_loaded):
         print("Both models are needed for comparison. Exiting.")
         exit()
 
-    # 3. Evaluation Loop
+    # Evaluation Loop
     # Initialize dictionary lists for all metrics
     results_prob = {"dice": [], "iou": [], "brier": [], "ece": []}
     results_mc = {"dice": [], "iou": [], "brier": [], "ece": []}
@@ -98,25 +96,25 @@ if __name__ == "__main__":
         image = image.to(DEVICE)
         gt_mask = mask_sets[:, 0, :, :, :].to(DEVICE) # Single GT mask
         
-        # --- Ensure Ground Truth is Binary (0/1) for Metrics ---
-        # This fixes Dice score logic if masks are not strictly binary
+        # Ensure Ground Truth is Binary (0/1) for Metrics
+        # Fixes Dice score logic if masks are not strictly binary
         gt_mask_binary = (gt_mask > 0.5).float()
         
-        # --- Run Probabilistic U-Net ---
+        # Run Probabilistic U-Net
         mean_prob = get_model_predictions(prob_model, image, "probabilistic")
         results_prob["dice"].append(compute_dice(mean_prob, gt_mask_binary))
         results_prob["iou"].append(compute_iou(mean_prob, gt_mask_binary))
         results_prob["brier"].append(compute_brier_score(mean_prob, gt_mask_binary))
         results_prob["ece"].append(ece_fn(mean_prob, gt_mask_binary))
         
-        # --- Run MC Dropout U-Net ---
+        # Run MC Dropout U-Net
         mean_mc = get_model_predictions(mc_model, image, "mc_dropout")
         results_mc["dice"].append(compute_dice(mean_mc, gt_mask_binary))
         results_mc["iou"].append(compute_iou(mean_mc, gt_mask_binary))
         results_mc["brier"].append(compute_brier_score(mean_mc, gt_mask_binary))
         results_mc["ece"].append(ece_fn(mean_mc, gt_mask_binary))
 
-    # 4. Process and Print Summary Stats
+    # Process and Print Summary Stats
     # Average the metrics
     results_prob = {k: np.mean(v) for k, v in results_prob.items()}
     results_mc = {k: np.mean(v) for k, v in results_mc.items()}
