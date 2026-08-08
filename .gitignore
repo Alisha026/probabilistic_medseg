@@ -151,8 +151,9 @@ dmypy.json
 
 # Experiment outputs
 training_log_*.out
+test_data_log_*.out
 evaluation_results/
-
+test.sh
 run*.sh
 compare.sh
 
