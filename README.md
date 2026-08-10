@@ -1,9 +1,5 @@
 # 🔮 Probabilistic Medical Image Segmentation
 
-<a target="_blank" href="https://cookiecutter-data-science.drivendata.org/">
-    <img src="https://img.shields.io/badge/CCDS-Project%20template-328F97?logo=cookiecutter" />
-</a>
-
 ### *Quantifying Uncertainty in Skin Lesion Diagnosis with Deep Learning*
 
 ![PyTorch](https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?style=for-the-badge&logo=PyTorch&logoColor=white)
