@@ -148,6 +148,7 @@ dmypy.json
 # Model checkpoints
 *.pth
 *.pt
+models/
 
 # Experiment outputs
 training_log_*.out
