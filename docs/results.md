@@ -49,15 +49,14 @@ A reliability diagram plots predicted confidence (x-axis) against observed accur
 
 ## Visual Analysis
 
-For qualitative inspection, each test case is visualized as a five-panel grid:
+For qualitative inspection, each test case is visualized as a four-panel grid:
 
 1. **Input** — the raw dermoscopic image
-2. **Mean Prediction** — the averaged segmentation mask across samples/passes
-3. **Aleatoric Uncertainty** — per-pixel variance from the Probabilistic U-Net's latent samples (data ambiguity)
-4. **Epistemic Uncertainty** — per-pixel variance from MC Dropout's stochastic passes (model uncertainty)
-5. **Ground Truth** — the reference annotation
+2. **Aleatoric Uncertainty** — per-pixel variance from the Probabilistic U-Net's latent samples (data ambiguity)
+3. **Epistemic Uncertainty** — per-pixel variance from MC Dropout's stochastic passes (model uncertainty)
+4. **Ground Truth** — the reference annotation
 
-![Five-Panel Uncertainty Visualization](assets/evaluation_showcase/compare_1.png)
+![Four-Panel Uncertainty Visualization](assets/evaluation_showcase/compare_1.png)
 
 !!! info "Clinical Note"
     In typical cases, aleatoric uncertainty concentrates tightly along the lesion border — exactly where a human rater would also hesitate. Epistemic uncertainty is more diffuse and case-dependent, spiking on lesions with atypical texture or color patterns underrepresented in training data. Seeing both maps side by side lets a clinician distinguish *"the image itself is ambiguous here"* from *"the model hasn't seen much like this before."*
