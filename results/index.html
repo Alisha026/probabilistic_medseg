@@ -720,15 +720,14 @@
 <p><strong>Analysis:</strong> The Probabilistic U-Net's calibration curve stays consistently closer to the diagonal across confidence bins than MC Dropout's, which tends to show overconfidence in the higher-confidence bins — a common failure mode where a model's predicted probabilities skew higher than its true accuracy warrants. This visual pattern is consistent with the Probabilistic U-Net's lower ECE reported above.</p>
 <hr />
 <h2 id="visual-analysis">Visual Analysis<a class="headerlink" href="#visual-analysis" title="Permanent link">&para;</a></h2>
-<p>For qualitative inspection, each test case is visualized as a five-panel grid:</p>
+<p>For qualitative inspection, each test case is visualized as a four-panel grid:</p>
 <ol>
 <li><strong>Input</strong> — the raw dermoscopic image</li>
-<li><strong>Mean Prediction</strong> — the averaged segmentation mask across samples/passes</li>
 <li><strong>Aleatoric Uncertainty</strong> — per-pixel variance from the Probabilistic U-Net's latent samples (data ambiguity)</li>
 <li><strong>Epistemic Uncertainty</strong> — per-pixel variance from MC Dropout's stochastic passes (model uncertainty)</li>
 <li><strong>Ground Truth</strong> — the reference annotation</li>
 </ol>
-<p><img alt="Five-Panel Uncertainty Visualization" src="../assets/evaluation_showcase/compare_1.png" /></p>
+<p><img alt="Four-Panel Uncertainty Visualization" src="../assets/evaluation_showcase/compare_1.png" /></p>
 <div class="admonition info">
 <p class="admonition-title">Clinical Note</p>
 <p>In typical cases, aleatoric uncertainty concentrates tightly along the lesion border — exactly where a human rater would also hesitate. Epistemic uncertainty is more diffuse and case-dependent, spiking on lesions with atypical texture or color patterns underrepresented in training data. Seeing both maps side by side lets a clinician distinguish <em>"the image itself is ambiguous here"</em> from <em>"the model hasn't seen much like this before."</em></p>
