@@ -43,8 +43,7 @@ A reliability diagram plots predicted confidence (x-axis) against observed accur
 
 ![Reliability Diagram](assets/evaluation_showcase/reliability_diagram.png)
 
-**Analysis:** The Probabilistic U-Net's calibration curve stays consistently closer to the diagonal across confidence bins than MC Dropout's, which tends to show overconfidence in the higher-confidence bins — a common failure mode where a model's predicted probabilities skew higher than its true accuracy warrants. This visual pattern is consistent with the Probabilistic U-Net's lower ECE reported above.
-
+**Analysis:** The Probabilistic U-Net's calibration curve stays consistently closer to the diagonal across confidence bins than MC Dropout's, which tends to show overconfidence in the higher-confidence bins.
 ---
 
 ## Visual Analysis
