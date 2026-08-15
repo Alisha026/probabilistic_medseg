@@ -12,7 +12,7 @@
   <img alt="License" src="https://img.shields.io/badge/License-MIT-black?style=flat-square">
 </p>
 
-[📖 Full Documentation](https://alisha026.github.io/probabilistic_medseg/) · [🐛 Report a Bug](https://github.com/Alisha026/probabilistic_medseg/issues) · [⭐ Star this repo](https://github.com/Alisha026/probabilistic_medseg)
+[📖 Full Documentation](https://alisha026.github.io/probabilistic_medseg/) · [🐛 Report a Bug](https://github.com/Alisha026/probabilistic_medseg/issues) · [⭐ Star this repo](https://github.com/Alisha026/probabilistic_medseg) · [Full Report](report/report.pdf)
 
 </div>
 
@@ -81,7 +81,7 @@ Evaluated head-to-head on 100 held-out ISIC test images:
 The interesting part isn't the Dice score. A ~2-point edge is nice but not headline news. The interesting part is that **Brier Score improves by ~30% and ECE by ~25%**. The Probabilistic U-Net isn't just *more accurate*, it's *more honest*: when it says 90% confident, it's a lot closer to actually being right 90% of the time.
 
 <div align="center">
-<img src="assets/evaluation_showcase/reliability_diagram.png" alt="Reliability diagram comparing calibration of Probabilistic U-Net vs MC Dropout" width="600">
+<img src="results/reliability_diagram.png" alt="Reliability diagram comparing calibration of Probabilistic U-Net vs MC Dropout" width="600">
 
 <sub><i>The dotted diagonal is what perfect honesty looks like. One model hugs it. One doesn't.</i></sub>
 </div>
@@ -137,14 +137,6 @@ pip install -r requirements.txt
 # Run it
 uvicorn src.probabilistic_medseg.api:app --host 0.0.0.0 --port 8000
 ```
-
-Then send it an image:
-
-```bash
-curl -X POST "http://localhost:8000/predict" -F "file=@your_lesion_image.jpg"
-```
-
-You'll get back a predicted mask *and* two uncertainty heatmaps: one for "the image is ambiguous," one for "the model is unsure of itself." Full endpoint schema → [**api.md**](https://alisha026.github.io/probabilistic_medseg/api/)
 
 ---
 
